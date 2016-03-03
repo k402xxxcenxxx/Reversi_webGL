@@ -26,7 +26,7 @@ function getSize() {
         myHeight = document.body.clientHeight;
     }
     var browserWH = {width:myWidth,height:myHeight};
-    alert("height : " + browserWH.height +", width : "+browserWH.width);
+    //alert("height : " + browserWH.height +", width : "+browserWH.width);
     return browserWH;
 }
 
@@ -40,7 +40,14 @@ function canvasSpport(){
 
 var g_Canvas;
 var g_context;
-var browserWH = {width:0,height:0};
+
+var g_isBoardVirtical;
+var g_browserWH = {width:0,height:0};
+var g_boardWH;
+var g_boardInsideWH;
+var g_chessBlockWH;
+var g_corner = {x:0,y:0};
+var g_inCorner = {x:0,y:0};
 
 var g_input = [];
 
@@ -58,23 +65,48 @@ function canvasApp(){
     if(!canvasSpport()){
         return;
     }
+
+    //建立canvas 元素並設定大小
+    g_browserWH = getSize();
+    $("#main-body").append("<canvas id='canvasOne' width='"+g_browserWH.width+"px' height='"+g_browserWH.height+"px' style='position:fixed;top:0px;left:0px;overflow:hidden'>不支援canvas</canvas>");
+
     g_Canvas = document.getElementById("canvasOne");//用id來取得canvas物件
     g_context = g_Canvas.getContext("2d");//取得context
 
-    init();//初始化
+    initCanvas();//初始化
+    initChessBoard();
+    
+    Render();
 
-    function init(){
-        browserWH = getSize();
-        $("#canvasOne").css({"height":browserWH.height+"px","width":browserWH.width+"px","position":"fixed","display":"block","left":"0px","top":"0px"});
-        
+    function initCanvas(){
         g_mode = "paint";//模式
         g_color = "blue";//顏色
         g_lineWidth = 1;//粗細
         g_context.lineWidth = g_lineWidth;//套用粗細
         g_context.strokeStyle = g_color;
         mouseCount = 0;//滑鼠點擊次數
-        renderRectangle(g_context,0,0,browserWH.width,browserWH.height,"black",1);//背景框線
 
+
+    }
+
+    function initChessBoard(){
+        if(g_browserWH.width >= g_browserWH.height){
+            g_isBoardVirtical = false;
+            g_boardWH = g_browserWH.height;
+
+            g_corner = {x: (g_browserWH.width-g_boardWH)/2,y:0};
+        }else{
+            g_isBoardVirtical = true;
+            g_boardWH = g_browserWH.width;
+
+            g_corner = {x: 0,y:0};
+        }
+
+        g_boardInsideWH = g_boardWH * 0.9;
+        g_chessBlockWH = g_boardInsideWH / 8;
+        g_inCorner = {x:g_corner.x + g_boardWH * 0.05,y:g_corner.y + g_boardWH * 0.05};
+
+        //alert("g_isBoardVirtical : "+g_isBoardVirtical+"\n"+"g_boardWH : "+g_boardWH+"\n");
     }
 
     canvasOne.addEventListener('mousedown',eventMouseDown);
@@ -156,10 +188,30 @@ function canvasApp(){
     //setInterval(Render,1000/60);//每秒呼叫render()60次
 }
 
+function RenderChessBoard(){
+
+    //棋盤背景
+    g_context.fillStyle = "#bfa68a";
+    g_context.fillRect(g_corner.x,g_corner.y,g_boardWH,g_boardWH);
+    renderRectangle(g_context,g_corner.x,g_corner.y,g_boardWH,g_boardWH,"black",1);//框線
+
+    //內部棋盤
+    renderRectangle(g_context,g_inCorner,g_inCorner,g_boardInsideWH,g_boardInsideWH,"black",1);//框線
+    
+    for(var rowNum = 0;rowNum < 8;rowNum++){//row
+        for(var colNum = 0;colNum < 8;colNum++){//column
+            renderRectangle(g_context,g_inCorner.x + colNum * g_chessBlockWH,g_inCorner.y + rowNum * g_chessBlockWH,g_chessBlockWH,g_chessBlockWH,"black",1);//框線
+        }
+    }
+
+}
+
 function Render(){
-    g_context.clearRect(0,0,browserWH.width,browserWH.height);
-    g_context.fillStyle = "#ffffaa";
-    g_context.fillRect(0,0,browserWH.width,browserWH.height);
+    g_context.clearRect(0,0,g_browserWH.width,g_browserWH.height);
+    g_context.fillStyle = "#ffffff";
+    g_context.fillRect(0,0,g_browserWH.width,g_browserWH.height);
+
+    RenderChessBoard();
 
     g_context.save();
 
@@ -266,7 +318,8 @@ function renderCircle(context,x,y,w,h,color,lineWidth)
 function renderRectangle(context,x,y,w,h,color,lineWidth) {
     context.lineWidth = lineWidth;
     context.strokeStyle = color;
-    context.strokeRect(x, y, w, h);
+    context.rect(x, y, w, h);
+    context.stroke();
 }
 
 function clearCanvas(){
