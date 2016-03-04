@@ -40,14 +40,17 @@ function canvasSpport(){
 
 var g_Canvas;
 var g_context;
+var g_board;
 
 var g_isBoardVirtical;
 var g_browserWH = {width:0,height:0};
 var g_boardWH;
 var g_boardInsideWH;
 var g_chessBlockWH;
+var g_chessRadius;
 var g_corner = {x:0,y:0};
 var g_inCorner = {x:0,y:0};
+var g_inCenter = {x:0,y:0};
 
 var g_input = [];
 
@@ -75,7 +78,7 @@ function canvasApp(){
 
     initCanvas();//初始化
     initChessBoard();
-    
+
     Render();
 
     function initCanvas(){
@@ -103,8 +106,14 @@ function canvasApp(){
         }
 
         g_boardInsideWH = g_boardWH * 0.9;
+        
         g_chessBlockWH = g_boardInsideWH / 8;
+        g_chessRadius = g_chessBlockWH / 2 * 0.8;
+        
         g_inCorner = {x:g_corner.x + g_boardWH * 0.05,y:g_corner.y + g_boardWH * 0.05};
+        g_inCenter = {x:g_inCorner.x + 0.5 * g_chessBlockWH,y:g_inCorner.y + 0.5 * g_chessBlockWH};
+
+        g_board = new Checkerboard();
 
         //alert("g_isBoardVirtical : "+g_isBoardVirtical+"\n"+"g_boardWH : "+g_boardWH+"\n");
     }
@@ -197,10 +206,29 @@ function RenderChessBoard(){
 
     //內部棋盤
     renderRectangle(g_context,g_inCorner,g_inCorner,g_boardInsideWH,g_boardInsideWH,"black",1);//框線
-    
+    //內部格子
     for(var rowNum = 0;rowNum < 8;rowNum++){//row
         for(var colNum = 0;colNum < 8;colNum++){//column
             renderRectangle(g_context,g_inCorner.x + colNum * g_chessBlockWH,g_inCorner.y + rowNum * g_chessBlockWH,g_chessBlockWH,g_chessBlockWH,"black",1);//框線
+        }
+    }
+
+    //內部棋子
+    for(var rowNum = 0;rowNum < 8;rowNum++){//row
+        for(var colNum = 0;colNum < 8;colNum++){//column
+            //畫黑棋
+            if(g_board.checkerboardInfo[rowNum][colNum] == g_board.InfoValue.black){
+
+                renderFillCircle(g_context,g_inCenter.x + colNum * g_chessBlockWH,g_inCenter.y + rowNum * g_chessBlockWH,g_chessRadius,"black",1);//框線
+
+                //畫白棋
+            }else if (g_board.checkerboardInfo[rowNum][colNum] == g_board.InfoValue.white){
+
+                renderFillCircle(g_context,g_inCenter.x + colNum * g_chessBlockWH,g_inCenter.y + rowNum * g_chessBlockWH,g_chessRadius,"white",1);//框線
+
+            }
+
+
         }
     }
 
@@ -312,6 +340,14 @@ function renderCircle(context,x,y,w,h,color,lineWidth)
     context.beginPath();
     context.arc(centerx,centery,radius,0,2*Math.PI);
     context.stroke();
+}
+
+function renderFillCircle(context,x,y,r,color)
+{
+    context.beginPath();
+    context.arc(x, y, r, 0, 2 * Math.PI, false);
+    context.fillStyle = color;
+    context.fill();
 }
 
 //For Rect mode

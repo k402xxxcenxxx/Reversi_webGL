@@ -1,10 +1,10 @@
 function Checkerboard(){
-    var chess = {
+    this.chess = {
         blackChess:0,
         whiteChess:1
     };
 
-    var InfoValue = {
+    this.InfoValue = {
         none:0,
         black: -1,
         white:1,
@@ -12,667 +12,605 @@ function Checkerboard(){
         error:99
     };
 
-    var isFinished;
+    this.isFinished;
 
-    var sideLength;
-    var currentChess;
-    var blackCount;
-    var whiteCount;
+    this.sideLength;
+    this.currentChess;
+    this.blackCount;
+    this.whiteCount;
 
-    var step;
+    this.step;
 
-    var currentPosition[2];//[0] is x,[1] is y
+    this.currentPosition = [];//[0] is x,[1] is y
 
-    var checkerboardInfo[8][8];
-    var chessManual[64][8][8];
-    var chessRecord[64];
-    var chessManualIndex;
+    this.checkerboardInfo = [];
+    this.chessManual = [];
+    this.chessRecord = [];
+    this.chessManualIndex;
 
-    initializeCheckerBoard();
 
-    function initializeCheckerBoard(){
-        isFinished = false;
-        sideLength = 8;
+    this.initializeCheckerBoard();
 
-        currentPosition[0] = 0;
-        currentPosition[1] = 0;
-        blackCount = 2;
-        whiteCount = 2;
-        Log = "";
-        showedLog = "";
-        chessManualIndex = -1;
-        step = -1;
-        currentChess = chess.whiteChess;
-        for (var j = 0;j < sideLength;j++)
+}
+
+Checkerboard.prototype.initializeCheckerBoard = function (){
+
+    this.isFinished = false;
+    this.sideLength = 8;
+
+    this.currentPosition[0] = 0;
+    this.currentPosition[1] = 0;
+    this.blackCount = 2;
+    this.whiteCount = 2;
+    this.Log = "";
+    this.showedLog = "";
+    this.chessManualIndex = -1;
+    this.step = -1;
+    this.currentChess = this.chess.whiteChess;
+    for (var j = 0;j < this.sideLength;j++)
+    {
+        var row = [];
+        for (var i = 0;i < this.sideLength;i++)
         {
-            for (var i = 0;i < sideLength;i++)
+            if ((i == 3 && j == 3) || (i == 4 && j == 4))
             {
-                if ((i == 3 && j == 3) || (i == 4 && j == 4))
-                {
-                    checkerboardInfo[i][j] = InfoValue.black;
-                } 
-                else if ((i == 3 && j == 4) || (i == 4 && j == 3))
-                {
-                    checkerboardInfo[i][j] = InfoValue.white;
-                } 
-                else
-                {
-                    checkerboardInfo[i][j] = InfoValue.none;
-                }
-
+                row[i] = this.InfoValue.black;
+            } 
+            else if ((i == 3 && j == 4) || (i == 4 && j == 3))
+            {
+                row[i] = this.InfoValue.white;
+            } 
+            else
+            {
+                row[i] = this.InfoValue.none;
             }
-        }
 
-        saveCurrentChessManual();
+        }
+        this.checkerboardInfo[j] = row;
     }
 
+    this.saveCurrentChessManual();
+};
 
+Checkerboard.prototype.saveCurrentChessManual = function(){
+    this.blackCount = 0;
+    this.whiteCount = 0;
 
-
-    function setCheckerboardInfo(PosX,PosY,value){
-        var gainChess = 0;
-
-        //if gain chess greater than 0,mean it is legal
-        if ((gainChess = checkRight(PosX, PosY)) > 0){
-            for (var i = PosX + 1; i <= PosX + gainChess; i++)
-            {
-                checkerboardInfo[PosY][i] = value;
-            }
-        }
-
-        if ((gainChess = checkLeft(PosX, PosY)) > 0){
-            for (var i = PosX - 1; i >= PosX - gainChess; i--)
-            {
-                checkerboardInfo[PosY][i] = value;
-            }
-        }
-
-        if ((gainChess = checkUp(PosX, PosY)) > 0){
-            for (var i = PosY - 1; i >= PosY - gainChess; i--)
-            {
-                checkerboardInfo[i][PosX] = value;
-            }
-        }
-
-        if ((gainChess = checkDown(PosX, PosY)) > 0){
-            for (var i = PosY + 1; i <= PosY + gainChess; i++)
-            {
-                checkerboardInfo[i][PosX] = value;
-            }
-        }
-
-        if ((gainChess = checkRightUp(PosX, PosY)) > 0){
-            for (var i = PosX + 1, j = PosY - 1; i <= PosX + gainChess && j >= PosY - gainChess; i++,j--)
-            {
-                checkerboardInfo[j][i] = value;
-            }
-        }
-
-        if ((gainChess = checkRightDown(PosX, PosY)) > 0){
-            for (var i = PosX + 1, j = PosY + 1; i <= PosX + gainChess && j <= PosY + gainChess; i++, j++)
-            {
-                checkerboardInfo[j][i] = value;
-            }
-        }
-
-        if ((gainChess = checkLeftUp(PosX, PosY)) > 0){
-            for (var i = PosX - 1, j = PosY - 1; i >= PosX - gainChess && j >= PosY - gainChess; i--, j--)
-            {
-                checkerboardInfo[j][i] = value;
-            }
-        }
-
-        if ((gainChess = checkLeftDown(PosX, PosY)) > 0){
-            for (var i = PosX - 1, j = PosY + 1; i >= PosX - gainChess && j <= PosY + gainChess; i--, j++)
-            {
-                checkerboardInfo[j][i] = value;
-            }
-        }
-
-        checkerboardInfo[PosY][PosX] = value;
+    this.step++;
+    this.chessManualIndex++;
+    //rewrite step count
+    if (this.chessManualIndex <= this.step){
+        this.step = this.chessManualIndex;
     }
 
-    function setChess(PosX,PosY){
-        clearLog();
-
-        if (checkLegal(PosX, PosY)){
-            if (currentChess == chess.blackChess){
-                // set value
-                setCheckerboardInfo(PosX, PosY, InfoValue.black);
-
-                //recode chess info
-                saveCurrentChessManual();
-
-            }
-            else if (currentChess == chess.whiteChess){
-                // set value
-                setCheckerboardInfo(PosX, PosY, InfoValue.white);
-
-                //recode chess info
-                saveCurrentChessManual();
-
-            }
-            else{
-                return;
-            }
-        }
-        else{
-            if (!isFinished)
-                logHandler("你不可以下這裡\n");
-        }
-    }
-
-    function cursorMove(input){
-        switch(input){
-            case 0://left
-                if(currentPosition[0]-1 >= 0)
-                    currentPosition[0] -= 1;
-                break;
-            case 1://up
-                if(currentPosition[1]-1 >= 0)
-                    currentPosition[1] -= 1;
-                break;
-            case 2://down
-                if(currentPosition[1]+1 < 8)
-                    currentPosition[1] += 1;
-                break;
-            case 3://right
-                if(currentPosition[0]+1 < 8)
-                    currentPosition[0] += 1;
-                break;
-
-        }
-    }//0 = left,1 = up,2 = down,3 = right
-
-    function saveCurrentChessManual(){
-        blackCount = 0;
-        whiteCount = 0;
-
-        step++;
-        chessManualIndex++;
-        //rewrite step count
-        if (chessManualIndex <= step){
-            step = chessManualIndex;
-        }
-
-        for (var rowNum = 0; rowNum < sideLength; rowNum++)
+    var board = [];
+    for (var rowNum = 0; rowNum < this.sideLength; rowNum++)
+    {
+        var row = [];
+        for (var colNum = 0; colNum < this.sideLength; colNum++)
         {
-            for (var colNum = 0; colNum < sideLength; colNum++)
-            {
-                chessManual[chessManualIndex][rowNum][colNum] = checkerboardInfo[rowNum][colNum];
+            row.push(this.checkerboardInfo[rowNum][colNum]);
 
-                switch (checkerboardInfo[rowNum][colNum]){
-                    case InfoValue.black:
-                        blackCount++;
-                        break;
-                    case InfoValue.white:
-                        whiteCount++;
-                        break;
+            switch (this.checkerboardInfo[rowNum][colNum]){
+                case this.InfoValue.black:
+                    this.blackCount++;
+                    break;
+                case this.InfoValue.white:
+                    this.whiteCount++;
+                    break;
+            }
+        }
+        board.push(row);
+    }
+    this.chessManual[this.chessManualIndex] = board;
+
+    if (this.currentChess == this.chess.whiteChess){
+        this.currentChess = this.chess.blackChess;
+    }
+    else if (this.currentChess == this.chess.blackChess){
+        this.currentChess = this.chess.whiteChess;
+    }
+
+    //if no pass,exchange chess
+    if (this.checkPass()){
+        if (this.currentChess == this.chess.whiteChess){
+            this.currentChess = this.chess.blackChess;
+        }
+        else if (this.currentChess == this.chess.blackChess){
+            this.currentChess = this.chess.whiteChess;
+        }
+
+        if (this.checkPass()){
+            this.isFinished = true;
+        }
+    }
+
+    this.chessRecord[this.chessManualIndex] = this.currentChess;
+
+};
+
+Checkerboard.prototype.setCheckerboardInfo = function(PosX,PosY,value){
+    var gainChess = 0;
+
+    //if gain chess greater than 0,mean it is legal
+    if ((gainChess = this.checkRight(PosX, PosY)) > 0){
+        for (var i = PosX + 1; i <= PosX + gainChess; i++)
+        {
+            this.checkerboardInfo[PosY][i] = value;
+        }
+    }
+
+    if ((gainChess = this.checkLeft(PosX, PosY)) > 0){
+        for (var i = PosX - 1; i >= PosX - gainChess; i--)
+        {
+            this.checkerboardInfo[PosY][i] = value;
+        }
+    }
+
+    if ((gainChess = this.checkUp(PosX, PosY)) > 0){
+        for (var i = PosY - 1; i >= PosY - gainChess; i--)
+        {
+            this.checkerboardInfo[i][PosX] = value;
+        }
+    }
+
+    if ((gainChess = this.checkDown(PosX, PosY)) > 0){
+        for (var i = PosY + 1; i <= PosY + gainChess; i++)
+        {
+            this.checkerboardInfo[i][PosX] = value;
+        }
+    }
+
+    if ((gainChess = this.checkRightUp(PosX, PosY)) > 0){
+        for (var i = PosX + 1, j = PosY - 1; i <= PosX + gainChess && j >= PosY - gainChess; i++,j--)
+        {
+            this.checkerboardInfo[j][i] = value;
+        }
+    }
+
+    if ((gainChess = this.checkRightDown(PosX, PosY)) > 0){
+        for (var i = PosX + 1, j = PosY + 1; i <= PosX + gainChess && j <= PosY + gainChess; i++, j++)
+        {
+            this.checkerboardInfo[j][i] = value;
+        }
+    }
+
+    if ((gainChess = this.checkLeftUp(PosX, PosY)) > 0){
+        for (var i = PosX - 1, j = PosY - 1; i >= PosX - gainChess && j >= PosY - gainChess; i--, j--)
+        {
+            this.checkerboardInfo[j][i] = value;
+        }
+    }
+
+    if ((gainChess = this.checkLeftDown(PosX, PosY)) > 0){
+        for (var i = PosX - 1, j = PosY + 1; i >= PosX - gainChess && j <= PosY + gainChess; i--, j++)
+        {
+            this.checkerboardInfo[j][i] = value;
+        }
+    }
+
+    this.checkerboardInfo[PosY][PosX] = value;
+};
+
+Checkerboard.prototype.checkPass = function (){
+    //check no hint
+    for (var rowNum = 0; rowNum < this.sideLength; rowNum++)
+    {
+        for (var colNum = 0; colNum < this.sideLength; colNum++)
+        {
+            if (this.checkerboardInfo[rowNum][colNum] == this.InfoValue.none){
+                if (this.checkLegal(colNum, rowNum)){
+                    return false;
                 }
             }
         }
+    }
+    return true;
+};
 
-        if (currentChess == chess.whiteChess){
-            currentChess = chess.blackChess;
-        }
-        else if (currentChess == chess.blackChess){
-            currentChess = chess.whiteChess;
-        }
+Checkerboard.prototype.checkRight = function (PosX,PosY){
+    var myValue, enemyValue;
+    var rowNum = PosY;
+    var colNum = PosX + 1;
+    var gainValue = 0;
 
-        //if no pass,exchange chess
-        if (checkPass()){
-            if (currentChess == chess.whiteChess){
-                currentChess = chess.blackChess;
-            }
-            else if (currentChess == chess.blackChess){
-                currentChess = chess.whiteChess;
-            }
-
-            if (checkPass()){
-                isFinished = true;
-            }
-        }
-
-        chessRecord[chessManualIndex] = currentChess;
-
+    //comfirm target chess
+    if (this.currentChess == this.chess.blackChess){
+        myValue = this.InfoValue.black;
+        enemyValue = this.InfoValue.white;
+    }
+    else if (this.currentChess == this.chess.whiteChess){
+        myValue = this.InfoValue.white;
+        enemyValue = this.InfoValue.black;
     }
 
-    function undo(){
-        if (chessManualIndex - 1 >= 0){
-            chessManualIndex -= 1;
-        }
+    //beside must be enemy
+    if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+        gainValue++;
 
-        //overwrite info
-        for (int rowNum = 0; rowNum < sideLength; rowNum++)
-        {
-            for (int colNum = 0; colNum < sideLength; colNum++)
-            {
-                checkerboardInfo[rowNum][colNum] = chessManual[chessManualIndex][rowNum][colNum];
+        //check from left to right
+        for (colNum+=1; colNum < this.sideLength; colNum++){
+            if (this.checkerboardInfo[rowNum][colNum] == myValue){
+                //finish gain chess
+                return gainValue;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+                gainValue++;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == this.InfoValue.none){
+                return -1;
             }
         }
 
-        currentChess = chessRecord[chessManualIndex];
-
+        //there is no my chess on the other side
+        return -1;
+    }
+    else{
+        return -1;
     }
 
-    function redo(){
-        if (chessManualIndex + 1 <= step){
-            chessManualIndex += 1;
-        }
+};
 
-
-        //overwrite info
-        for (int rowNum = 0; rowNum < sideLength; rowNum++)
-        {
-            for (int colNum = 0; colNum < sideLength; colNum++)
-            {
-                checkerboardInfo[rowNum][colNum] = chessManual[chessManualIndex][rowNum][colNum];
-            }
-        }
-        currentChess = chessRecord[chessManualIndex];
+Checkerboard.prototype.checkLeft = function (PosX,PosY){
+    var myValue, enemyValue;
+    var rowNum = PosY;
+    var colNum = PosX - 1;
+    var gainValue = 0;
+    
+    if(colNum < 0){
+        return -1;
     }
 
-    function checkPass(){
-        //check no hint
-        for (var rowNum = 0; rowNum < sideLength; rowNum++)
-        {
-            for (var colNum = 0; colNum < sideLength; colNum++)
-            {
-                if (checkerboardInfo[rowNum][colNum] == InfoValue.none){
-                    if (checkLegal(colNum, rowNum)){
-                        return false;
-                    }
-                }
+    //comfirm target chess
+    if (this.currentChess == this.chess.blackChess){
+        myValue = this.InfoValue.black;
+        enemyValue = this.InfoValue.white;
+    }
+    else if (this.currentChess == this.chess.whiteChess){
+        myValue = this.InfoValue.white;
+        enemyValue = this.InfoValue.black;
+    }
+
+    //beside must be enemy
+    if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+        gainValue++;
+
+        //check from right to left  
+        for (colNum -= 1; colNum >= 0; colNum--){
+            if (this.checkerboardInfo[rowNum][colNum] == myValue){
+                //finish gain chess
+                return gainValue;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+                gainValue++;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == this.InfoValue.none){
+                return -1;
             }
         }
+
+        //there is no my chess on the other side
+        return -1;
+    }
+    else{
+        return -1;
+    }
+
+};
+
+Checkerboard.prototype.checkUp = function (PosX,PosY){
+    var myValue, enemyValue;
+    var rowNum = PosY - 1;
+    var colNum = PosX;
+    var gainValue = 0;
+
+    if(rowNum < 0){
+        return -1;
+    }
+
+    //comfirm target chess
+    if (this.currentChess == this.chess.blackChess){
+        myValue = this.InfoValue.black;
+        enemyValue = this.InfoValue.white;
+    }
+    else if (this.currentChess == this.chess.whiteChess){
+        myValue = this.InfoValue.white;
+        enemyValue = this.InfoValue.black;
+    }
+
+    //beside must be enemy
+    if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+        gainValue++;
+
+        //check from down to up  
+        for (rowNum -= 1; rowNum >= 0; rowNum--){
+            if (this.checkerboardInfo[rowNum][colNum] == myValue){
+                //finish gain chess
+                return gainValue;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+                gainValue++;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == this.InfoValue.none){
+                return -1;
+            }
+        }
+
+        //there is no my chess on the other side
+        return -1;
+    }
+    else{
+        return -1;
+    }
+
+};
+
+Checkerboard.prototype.checkDown = function (PosX,PosY){
+    var myValue, enemyValue;
+    var rowNum = PosY + 1;
+    var colNum = PosX;
+    var gainValue = 0;
+
+    //comfirm target chess
+    if (this.currentChess == this.chess.blackChess){
+        myValue = this.InfoValue.black;
+        enemyValue = this.InfoValue.white;
+    }
+    else if (this.currentChess == this.chess.whiteChess){
+        myValue = this.InfoValue.white;
+        enemyValue = this.InfoValue.black;
+    }
+
+    //beside must be enemy
+    if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+        gainValue++;
+
+        //check from up to down  
+        for (rowNum += 1; rowNum < this.sideLength; rowNum++){
+            if (this.checkerboardInfo[rowNum][colNum] == myValue){
+                //finish gain chess
+                return gainValue;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+                gainValue++;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == this.InfoValue.none){
+                return -1;
+            }
+        }
+
+        //there is no my chess on the other side
+        return -1;
+    }
+    else{
+        return -1;
+    }
+
+};
+
+Checkerboard.prototype.checkRightUp = function (PosX,PosY){
+    var myValue, enemyValue;
+    var rowNum = PosY - 1;
+    var colNum = PosX + 1;
+    var gainValue = 0;
+
+    if(rowNum < 0){
+        return -1;
+    }
+
+    //comfirm target chess
+    if (this.currentChess == this.chess.blackChess){
+        myValue = this.InfoValue.black;
+        enemyValue = this.InfoValue.white;
+    }
+    else if (this.currentChess == this.chess.whiteChess){
+        myValue = this.InfoValue.white;
+        enemyValue = this.InfoValue.black;
+    }
+
+    //beside must be enemy
+    if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+        gainValue++;
+
+        //check from leftdown to rightup  
+        for (rowNum -= 1, colNum += 1; rowNum >= 0 && colNum < this.sideLength; rowNum--, colNum++){
+            if (this.checkerboardInfo[rowNum][colNum] == myValue){
+                //finish gain chess
+                return gainValue;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+                gainValue++;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == this.InfoValue.none){
+                return -1;
+            }
+        }
+
+        //there is no my chess on the other side
+        return -1;
+    }
+    else{
+        return -1;
+    }
+
+};
+
+Checkerboard.prototype.checkRightDown = function (PosX,PosY){
+    var myValue, enemyValue;
+    var rowNum = PosY + 1;
+    var colNum = PosX + 1;
+    var gainValue = 0;
+
+    //comfirm target chess
+    if (this.currentChess == this.chess.blackChess){
+        myValue = this.InfoValue.black;
+        enemyValue = this.InfoValue.white;
+    }
+    else if (this.currentChess == this.chess.whiteChess){
+        myValue = this.InfoValue.white;
+        enemyValue = this.InfoValue.black;
+    }
+
+    //beside must be enemy
+    if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+        gainValue++;
+
+        //check from leftup to rightdown  
+        for (rowNum += 1, colNum += 1; rowNum < this.sideLength && colNum < this.sideLength; rowNum++, colNum++){
+            if (this.checkerboardInfo[rowNum][colNum] == myValue){
+                //finish gain chess
+                return gainValue;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+                gainValue++;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == this.InfoValue.none){
+                return -1;
+            }
+        }
+
+        //there is no my chess on the other side
+        return -1;
+    }
+    else{
+        return -1;
+    }
+
+};
+
+Checkerboard.prototype.checkLeftUp = function (PosX,PosY){
+    var myValue, enemyValue;
+    var rowNum = PosY - 1;
+    var colNum = PosX - 1;
+    var gainValue = 0;
+
+    if(rowNum < 0 || colNum < 0){
+        return -1;
+    }
+
+    //comfirm target chess
+    if (this.currentChess == this.chess.blackChess){
+        myValue = this.InfoValue.black;
+        enemyValue = this.InfoValue.white;
+    }
+    else if (this.currentChess == this.chess.whiteChess){
+        myValue = this.InfoValue.white;
+        enemyValue = this.InfoValue.black;
+    }
+
+    //beside must be enemy
+    if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+        gainValue++;
+
+        //check from rightdown to leftup  
+        for (rowNum -= 1, colNum -= 1; rowNum >= 0 && colNum >= 0; rowNum--, colNum--){
+            if (this.checkerboardInfo[rowNum][colNum] == myValue){
+                //finish gain chess
+                return gainValue;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+                gainValue++;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == this.InfoValue.none){
+                return -1;
+            }
+        }
+
+        //there is no my chess on the other side
+        return -1;
+    }
+    else{
+        return -1;
+    }
+
+};
+
+Checkerboard.prototype.checkLeftDown = function (PosX,PosY){
+    var myValue, enemyValue;
+    var rowNum = PosY + 1;
+    var colNum = PosX - 1;
+    var gainValue = 0;
+
+    if(colNum < 0){
+        return -1;
+    }
+
+    //comfirm target chess
+    if (this.currentChess == this.chess.blackChess){
+        myValue = this.InfoValue.black;
+        enemyValue = this.InfoValue.white;
+    }
+    else if (this.currentChess == this.chess.whiteChess){
+        myValue = this.InfoValue.white;
+        enemyValue = this.InfoValue.black;
+    }
+
+    //beside must be enemy
+    if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+        gainValue++;
+
+        //check from rightup to leftdown  
+        for (rowNum += 1, colNum -= 1; rowNum < this.sideLength && colNum >= 0; rowNum++, colNum--){
+            if (this.checkerboardInfo[rowNum][colNum] == myValue){
+                //finish gain chess
+                return gainValue;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == enemyValue){
+                gainValue++;
+            }
+            else if (this.checkerboardInfo[rowNum][colNum] == this.InfoValue.none){
+                return -1;
+            }
+        }
+
+        //there is no my chess on the other side
+        return -1;
+    }
+    else{
+        return -1;
+    }
+
+};
+
+Checkerboard.prototype.checkLegal = function (PosX,PosY){
+    if (this.checkerboardInfo[PosY][PosX] != this.InfoValue.none){
+        return false;
+    }
+
+    if (this.checkRight(PosX, PosY) > 0 ||
+        this.checkLeft(PosX, PosY) > 0 ||
+        this.checkUp(PosX, PosY) > 0 ||
+        this.checkDown(PosX, PosY) > 0 ||
+        this.checkRightUp(PosX, PosY) > 0 ||
+        this.checkRightDown(PosX, PosY) > 0 ||
+        this.checkLeftUp(PosX, PosY) > 0 ||
+        this.checkLeftDown(PosX, PosY) > 0){
+
         return true;
     }
-
-    function checkRight(PosX,PosY){
-        var myValue, enemyValue;
-        var rowNum = PosY;
-        var colNum = PosX + 1;
-        var gainValue = 0;
-
-        //comfirm target chess
-        if (currentChess == chess.blackChess){
-            myValue = InfoValue.black;
-            enemyValue = InfoValue.white;
-        }
-        else if (currentChess == chess.whiteChess){
-            myValue = InfoValue.white;
-            enemyValue = InfoValue.black;
-        }
-
-        //beside must be enemy
-        if (checkerboardInfo[rowNum][colNum] == enemyValue){
-            gainValue++;
-
-            //check from left to right
-            for (colNum+=1; colNum < sideLength; colNum++){
-                if (checkerboardInfo[rowNum][colNum] == myValue){
-                    //finish gain chess
-                    return gainValue;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == enemyValue){
-                    gainValue++;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == InfoValue.none){
-                    return -1;
-                }
-            }
-
-            //there is no my chess on the other side
-            return -1;
-        }
-        else{
-            return -1;
-        }
-
+    else{
+        return false;
     }
+};//check if legal
 
-    function checkLeft(PosX,PosY){
-        var myValue, enemyValue;
-        var rowNum = PosY;
-        var colNum = PosX - 1;
-        var gainValue = 0;
-
-        //comfirm target chess
-        if (currentChess == chess.blackChess){
-            myValue = InfoValue.black;
-            enemyValue = InfoValue.white;
-        }
-        else if (currentChess == chess.whiteChess){
-            myValue = InfoValue.white;
-            enemyValue = InfoValue.black;
-        }
-
-        //beside must be enemy
-        if (checkerboardInfo[rowNum][colNum] == enemyValue){
-            gainValue++;
-
-            //check from right to left  
-            for (colNum -= 1; colNum >= 0; colNum--){
-                if (checkerboardInfo[rowNum][colNum] == myValue){
-                    //finish gain chess
-                    return gainValue;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == enemyValue){
-                    gainValue++;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == InfoValue.none){
-                    return -1;
-                }
-            }
-
-            //there is no my chess on the other side
-            return -1;
-        }
-        else{
-            return -1;
-        }
-
+Checkerboard.prototype.checkFinished = function(){
+    if (this.step >= 60){
+        this.isFinished = true;
+    }else{
+        this.isFinished = false;
     }
+};
 
-    function checkUp(PosX,PosY){
-        var myValue, enemyValue;
-        var rowNum = PosY - 1;
-        var colNum = PosX;
-        var gainValue = 0;
+Checkerboard.prototype.logHandler = function(log){
+    this.Log += log;
+};
 
-        //comfirm target chess
-        if (currentChess == chess.blackChess){
-            myValue = InfoValue.black;
-            enemyValue = InfoValue.white;
-        }
-        else if (currentChess == chess.whiteChess){
-            myValue = InfoValue.white;
-            enemyValue = InfoValue.black;
-        }
+Checkerboard.prototype.showLog = function(){};
 
-        //beside must be enemy
-        if (checkerboardInfo[rowNum][colNum] == enemyValue){
-            gainValue++;
+Checkerboard.prototype.clearLog = function(){
+    this.Log = "";
+};
 
-            //check from down to up  
-            for (rowNum -= 1; rowNum >= 0; rowNum--){
-                if (checkerboardInfo[rowNum][colNum] == myValue){
-                    //finish gain chess
-                    return gainValue;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == enemyValue){
-                    gainValue++;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == InfoValue.none){
-                    return -1;
-                }
-            }
-
-            //there is no my chess on the other side
-            return -1;
-        }
-        else{
-            return -1;
-        }
-
-    }
-
-    function checkDown(PosX,PosY){
-        var myValue, enemyValue;
-        var rowNum = PosY + 1;
-        var colNum = PosX;
-        var gainValue = 0;
-
-        //comfirm target chess
-        if (currentChess == chess.blackChess){
-            myValue = InfoValue.black;
-            enemyValue = InfoValue.white;
-        }
-        else if (currentChess == chess.whiteChess){
-            myValue = InfoValue.white;
-            enemyValue = InfoValue.black;
-        }
-
-        //beside must be enemy
-        if (checkerboardInfo[rowNum][colNum] == enemyValue){
-            gainValue++;
-
-            //check from up to down  
-            for (rowNum += 1; rowNum < sideLength; rowNum++){
-                if (checkerboardInfo[rowNum][colNum] == myValue){
-                    //finish gain chess
-                    return gainValue;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == enemyValue){
-                    gainValue++;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == InfoValue.none){
-                    return -1;
-                }
-            }
-
-            //there is no my chess on the other side
-            return -1;
-        }
-        else{
-            return -1;
-        }
-
-    }
-
-    function checkRightUp(PosX,PosY){
-        var myValue, enemyValue;
-        var rowNum = PosY - 1;
-        var colNum = PosX + 1;
-        var gainValue = 0;
-
-        //comfirm target chess
-        if (currentChess == chess.blackChess){
-            myValue = InfoValue.black;
-            enemyValue = InfoValue.white;
-        }
-        else if (currentChess == chess.whiteChess){
-            myValue = InfoValue.white;
-            enemyValue = InfoValue.black;
-        }
-
-        //beside must be enemy
-        if (checkerboardInfo[rowNum][colNum] == enemyValue){
-            gainValue++;
-
-            //check from leftdown to rightup  
-            for (rowNum -= 1, colNum += 1; rowNum >= 0 && colNum < sideLength; rowNum--, colNum++){
-                if (checkerboardInfo[rowNum][colNum] == myValue){
-                    //finish gain chess
-                    return gainValue;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == enemyValue){
-                    gainValue++;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == InfoValue.none){
-                    return -1;
-                }
-            }
-
-            //there is no my chess on the other side
-            return -1;
-        }
-        else{
-            return -1;
-        }
-
-    }
-
-    function checkRightDown(PosX,PosY){
-        var myValue, enemyValue;
-        var rowNum = PosY + 1;
-        var colNum = PosX + 1;
-        var gainValue = 0;
-
-        //comfirm target chess
-        if (currentChess == chess.blackChess){
-            myValue = InfoValue.black;
-            enemyValue = InfoValue.white;
-        }
-        else if (currentChess == chess.whiteChess){
-            myValue = InfoValue.white;
-            enemyValue = InfoValue.black;
-        }
-
-        //beside must be enemy
-        if (checkerboardInfo[rowNum][colNum] == enemyValue){
-            gainValue++;
-
-            //check from leftup to rightdown  
-            for (rowNum += 1, colNum += 1; rowNum < sideLength && colNum < sideLength; rowNum++, colNum++){
-                if (checkerboardInfo[rowNum][colNum] == myValue){
-                    //finish gain chess
-                    return gainValue;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == enemyValue){
-                    gainValue++;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == InfoValue.none){
-                    return -1;
-                }
-            }
-
-            //there is no my chess on the other side
-            return -1;
-        }
-        else{
-            return -1;
-        }
-
-    }
-
-    function checkLeftUp(PosX,PosY){
-        var myValue, enemyValue;
-        var rowNum = PosY - 1;
-        var colNum = PosX - 1;
-        var gainValue = 0;
-
-        //comfirm target chess
-        if (currentChess == chess.blackChess){
-            myValue = InfoValue.black;
-            enemyValue = InfoValue.white;
-        }
-        else if (currentChess == chess.whiteChess){
-            myValue = InfoValue.white;
-            enemyValue = InfoValue.black;
-        }
-
-        //beside must be enemy
-        if (checkerboardInfo[rowNum][colNum] == enemyValue){
-            gainValue++;
-
-            //check from rightdown to leftup  
-            for (rowNum -= 1, colNum -= 1; rowNum >= 0 && colNum >= 0; rowNum--, colNum--){
-                if (checkerboardInfo[rowNum][colNum] == myValue){
-                    //finish gain chess
-                    return gainValue;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == enemyValue){
-                    gainValue++;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == InfoValue.none){
-                    return -1;
-                }
-            }
-
-            //there is no my chess on the other side
-            return -1;
-        }
-        else{
-            return -1;
-        }
-
-    }
-
-    function checkLeftDown(PosX,PosY){
-        var myValue, enemyValue;
-        var rowNum = PosY + 1;
-        var colNum = PosX - 1;
-        var gainValue = 0;
-
-        //comfirm target chess
-        if (currentChess == chess.blackChess){
-            myValue = InfoValue.black;
-            enemyValue = InfoValue.white;
-        }
-        else if (currentChess == chess.whiteChess){
-            myValue = InfoValue.white;
-            enemyValue = InfoValue.black;
-        }
-
-        //beside must be enemy
-        if (checkerboardInfo[rowNum][colNum] == enemyValue){
-            gainValue++;
-
-            //check from rightup to leftdown  
-            for (rowNum += 1, colNum -= 1; rowNum < sideLength && colNum >= 0; rowNum++, colNum--){
-                if (checkerboardInfo[rowNum][colNum] == myValue){
-                    //finish gain chess
-                    return gainValue;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == enemyValue){
-                    gainValue++;
-                }
-                else if (checkerboardInfo[rowNum][colNum] == InfoValue.none){
-                    return -1;
-                }
-            }
-
-            //there is no my chess on the other side
-            return -1;
-        }
-        else{
-            return -1;
-        }
-
-    }
-    function checkLegal(PosX,PosY){
-        if (checkerboardInfo[PosY][PosX] != InfoValue.none){
-            return false;
-        }
-
-        if (checkRight(PosX, PosY) > 0 ||
-            checkLeft(PosX, PosY) > 0 ||
-            checkUp(PosX, PosY) > 0 ||
-            checkDown(PosX, PosY) > 0 ||
-            checkRightUp(PosX, PosY) > 0 ||
-            checkRightDown(PosX, PosY) > 0 ||
-            checkLeftUp(PosX, PosY) > 0 ||
-            checkLeftDown(PosX, PosY) > 0){
-
-            return true;
-        }
-        else{
-            return false;
-        }
-    }//check if legal
-
-    function checkFinished(){
-        if (step >= 60){
-            isFinished = true;
-        }else{
-            isFinished = false;
-        }
-    }
-
-    var Log;
-    var showedLog;
-    function logHandler(log){
-        Log += log;
-    }
-    
-    function showLog(){}
-    
-    function clearLog(){
-        Log = "";
-    }
-
-    function getInfo(){
-        return checkerboardInfo;
-    }
+Checkerboard.prototype.getBoardInfo = function(){
+    return this.checkerboardInfo;
 };
