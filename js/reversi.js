@@ -213,6 +213,10 @@ Checkerboard.prototype.checkRight = function (PosX,PosY){
     var rowNum = PosY;
     var colNum = PosX + 1;
     var gainValue = 0;
+    
+    if(colNum > this.sideLength){
+        return -1;
+    }
 
     //comfirm target chess
     if (this.currentChess == this.chess.blackChess){
@@ -256,7 +260,7 @@ Checkerboard.prototype.checkLeft = function (PosX,PosY){
     var rowNum = PosY;
     var colNum = PosX - 1;
     var gainValue = 0;
-    
+
     if(colNum < 0){
         return -1;
     }
@@ -350,6 +354,10 @@ Checkerboard.prototype.checkDown = function (PosX,PosY){
     var rowNum = PosY + 1;
     var colNum = PosX;
     var gainValue = 0;
+    
+    if(rowNum >= this.sideLength){
+        return -1;
+    }
 
     //comfirm target chess
     if (this.currentChess == this.chess.blackChess){
@@ -394,7 +402,7 @@ Checkerboard.prototype.checkRightUp = function (PosX,PosY){
     var colNum = PosX + 1;
     var gainValue = 0;
 
-    if(rowNum < 0){
+    if(rowNum < 0 || colNum >= this.sideLength){
         return -1;
     }
 
@@ -440,6 +448,10 @@ Checkerboard.prototype.checkRightDown = function (PosX,PosY){
     var rowNum = PosY + 1;
     var colNum = PosX + 1;
     var gainValue = 0;
+    
+    if(rowNum >= this.sideLength || colNum >= this.sideLength){
+        return -1;
+    }
 
     //comfirm target chess
     if (this.currentChess == this.chess.blackChess){
@@ -531,7 +543,7 @@ Checkerboard.prototype.checkLeftDown = function (PosX,PosY){
     var colNum = PosX - 1;
     var gainValue = 0;
 
-    if(colNum < 0){
+    if(colNum < 0 || rowNum >= this.sideLength){
         return -1;
     }
 
@@ -593,6 +605,36 @@ Checkerboard.prototype.checkLegal = function (PosX,PosY){
     }
 };//check if legal
 
+Checkerboard.prototype.setChess = function (PosX,PosY){
+        this.clearLog();
+
+        if (this.checkLegal(PosX, PosY)){
+            if (this.currentChess == this.chess.blackChess){
+                // set value
+                this.setCheckerboardInfo(PosX, PosY, this.InfoValue.black);
+
+                //recode chess info
+                this.saveCurrentChessManual();
+
+            }
+            else if (this.currentChess == this.chess.whiteChess){
+                // set value
+                this.setCheckerboardInfo(PosX, PosY, this.InfoValue.white);
+
+                //recode chess info
+                this.saveCurrentChessManual();
+
+            }
+            else{
+                return;
+            }
+        }
+        else{
+            if (!this.isFinished)
+                this.logHandler("你不可以下這裡\n");
+        }
+    }
+
 Checkerboard.prototype.checkFinished = function(){
     if (this.step >= 60){
         this.isFinished = true;
@@ -612,5 +654,25 @@ Checkerboard.prototype.clearLog = function(){
 };
 
 Checkerboard.prototype.getBoardInfo = function(){
-    return this.checkerboardInfo;
+    var board = [];
+    for (var rowNum = 0; rowNum < this.sideLength; rowNum++)
+    {
+        var row = [];
+        for (var colNum = 0; colNum < this.sideLength; colNum++)
+        {
+
+            if(this.checkerboardInfo[rowNum][colNum] == this.InfoValue.none){
+                if (this.checkLegal(colNum, rowNum)){
+                    row.push(this.InfoValue.hint);
+                }else{
+                    row.push(this.InfoValue.none);
+                }
+            }else{
+                row.push(this.checkerboardInfo[rowNum][colNum]);
+            }
+
+        }
+        board.push(row);
+    }
+    return board;
 };

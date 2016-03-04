@@ -51,6 +51,9 @@ var g_chessRadius;
 var g_corner = {x:0,y:0};
 var g_inCorner = {x:0,y:0};
 var g_inCenter = {x:0,y:0};
+var g_currentPos = {col:-1,row:-1};
+
+var g_boardShow = [[]];
 
 var g_input = [];
 
@@ -62,6 +65,11 @@ var mouseDown;
 var mouseCount = 0;
 var mouse = {x:0,y:0};
 var mouseRecord = {x:0 ,y:0};
+
+var imgWhiteChess = new Image();
+var imgBlackChess = new Image();
+var imgHintChess = new Image();
+
 
 function canvasApp(){
 
@@ -75,6 +83,10 @@ function canvasApp(){
 
     g_Canvas = document.getElementById("canvasOne");//用id來取得canvas物件
     g_context = g_Canvas.getContext("2d");//取得context
+    
+    imgWhiteChess.src = 'img/whiteChess_small.png';
+    imgBlackChess.src = 'img/blackChess_small.png';
+    imgHintChess.src = 'img/hintChess_small.png';
 
     initCanvas();//初始化
     initChessBoard();
@@ -106,15 +118,16 @@ function canvasApp(){
         }
 
         g_boardInsideWH = g_boardWH * 0.9;
-        
+
         g_chessBlockWH = g_boardInsideWH / 8;
-        g_chessRadius = g_chessBlockWH / 2 * 0.8;
-        
+        g_chessRadius = g_chessBlockWH * 0.8;
+
         g_inCorner = {x:g_corner.x + g_boardWH * 0.05,y:g_corner.y + g_boardWH * 0.05};
         g_inCenter = {x:g_inCorner.x + 0.5 * g_chessBlockWH,y:g_inCorner.y + 0.5 * g_chessBlockWH};
 
+        
         g_board = new Checkerboard();
-
+        g_boardShow = g_board.getBoardInfo();
         //alert("g_isBoardVirtical : "+g_isBoardVirtical+"\n"+"g_boardWH : "+g_boardWH+"\n");
     }
 
@@ -126,75 +139,57 @@ function canvasApp(){
         mouse.x = event.offsetX;
         mouse.y = event.offsetY;
 
-        if(g_mode == "paint"){
-            if(mouseDown){
-                var data = {mode: "paint",x: mouse.x, y: mouse.y, w:1,h:0, color: g_color,lineWidth:g_lineWidth};
+        g_currentPos = GetMousePosition(mouse.x,mouse.y);
+        
+        
+        if(mouseRecord.x != g_currentPos.col || mouseRecord.y != g_currentPos.row){
 
-                g_input.push(data);
-            }
+            mouseRecord.x = g_currentPos.col;
+            mouseRecord.y = g_currentPos.row;
+
         }
-        Render();
+        
+        
+            Render();
+
     }
     function eventMouseDown(){
+        
 
-        g_context.strokeStyle = g_color;//更新畫筆顏色
-        g_context.moveTo(event.offsetX,event.offsetY);//將畫筆移動到滑鼠位置
-
-
-        switch(g_mode){
-            case "paint":
-                var data = {mode: "paint",x: mouse.x, y: mouse.y, w:0,h:0, color: g_color,lineWidth:g_lineWidth};//按下去的那一個點
-                g_input.push(data);
-                mouseDown = true;
-                break;
-            case "rectangle":
-                if(mouseCount < 1){ 
-                    mouseRecord.x = event.offsetX;
-                    mouseRecord.y = event.offsetY;
-                    mouseCount++;
-                }else if(mouseCount == 1){
-                    var data = {mode: "rectangle",x: mouseRecord.x, y: mouseRecord.y, w:event.offsetX - mouseRecord.x,h:event.offsetY - mouseRecord.y, color: g_color,lineWidth:g_lineWidth};
-                    g_input.push(data);
-                    mouseCount = 0;
-                }
-                break;
-            case "circle":
-                if(mouseCount < 1){ 
-                    mouseRecord.x = event.offsetX;
-                    mouseRecord.y = event.offsetY;
-                    mouseCount++;
-                }else if(mouseCount == 1){
-                    var data = {mode: "circle",x: mouseRecord.x, y: mouseRecord.y, w:event.offsetX - mouseRecord.x,h:event.offsetY - mouseRecord.y, color: g_color,lineWidth:g_lineWidth};
-                    g_input.push(data);
-                    mouseCount = 0;
-                }
-                break;
-            case "line":
-                if(mouseCount < 1){ 
-                    mouseRecord.x = event.offsetX;
-                    mouseRecord.y = event.offsetY;
-                    mouseCount++;
-                }else if(mouseCount == 1){
-                    var data = {mode: "line",x: mouseRecord.x, y: mouseRecord.y, w:event.offsetX - mouseRecord.x,h:event.offsetY - mouseRecord.y, color: g_color,lineWidth:g_lineWidth};
-                    g_input.push(data);
-                    mouseCount = 0;
-                }
-                break;
-        }
     }
 
     function eventMouseUp(){
-        mouseDown = false;
-        if(g_mode == "paint"){
-            if(mouseDown){
-                var data = {mode: "paint",x: mouse.x, y: mouse.y, w:2,h:0, color: g_color,lineWidth:g_lineWidth};
-
-                g_input.push(data);
-            }
-        }
+        g_board.setChess(mouseRecord.x,mouseRecord.y);
+        
+        g_boardShow = g_board.getBoardInfo();
     }
 
     //setInterval(Render,1000/60);//每秒呼叫render()60次
+}
+
+function GetMousePosition(PosX,PosY){
+    var row = -1,col = -1;
+    if(PosX > g_inCorner.x && PosX < g_inCorner.x + g_boardInsideWH){
+        if(PosY > g_inCorner.y && PosY < g_inCorner.y + g_boardInsideWH){
+
+            for(var rowNum = 0;rowNum < g_board.sideLength;rowNum++){
+                if(PosY > g_inCorner.y + rowNum * g_chessBlockWH && PosY <= g_inCorner.y + (rowNum+1) * g_chessBlockWH){
+                    row = rowNum;
+                    break;
+                }
+
+            }
+
+            for(var colNum = 0;rowNum < g_board.sideLength;colNum++){
+                if(PosX > g_inCorner.x + colNum * g_chessBlockWH && PosX <= g_inCorner.x + (colNum+1) * g_chessBlockWH){
+                    col = colNum;
+                    break;
+                }
+            }
+
+        }
+    }
+    return {col:col,row:row};
 }
 
 function RenderChessBoard(){
@@ -216,19 +211,26 @@ function RenderChessBoard(){
     //內部棋子
     for(var rowNum = 0;rowNum < 8;rowNum++){//row
         for(var colNum = 0;colNum < 8;colNum++){//column
-            //畫黑棋
-            if(g_board.checkerboardInfo[rowNum][colNum] == g_board.InfoValue.black){
-
-                renderFillCircle(g_context,g_inCenter.x + colNum * g_chessBlockWH,g_inCenter.y + rowNum * g_chessBlockWH,g_chessRadius,"black",1);//框線
-
-                //畫白棋
-            }else if (g_board.checkerboardInfo[rowNum][colNum] == g_board.InfoValue.white){
-
-                renderFillCircle(g_context,g_inCenter.x + colNum * g_chessBlockWH,g_inCenter.y + rowNum * g_chessBlockWH,g_chessRadius,"white",1);//框線
-
+            switch(g_boardShow[rowNum][colNum]){
+                //畫黑棋
+                case -1:
+                    renderChessImg(g_context,colNum,rowNum,g_chessRadius,g_chessRadius,"black");
+                    //renderChess(g_context,colNum,rowNum,"black");
+                    break;
+                    
+                //畫白棋   
+                case 1:
+                    renderChessImg(g_context,colNum,rowNum,g_chessRadius,g_chessRadius,"white");
+                    //renderChess(g_context,colNum,rowNum,"white");
+                    break;
+                    
+                //畫提示   
+                case 4:
+                    renderChessImg(g_context,colNum,rowNum,g_chessRadius,g_chessRadius,"hint");
+                    //renderChess(g_context,colNum,rowNum,"green");
+                    break;
             }
-
-
+            
         }
     }
 
@@ -243,49 +245,37 @@ function Render(){
 
     g_context.save();
 
-    if(g_mode == "paint"){
-        for_test.innerHTML = "paint mode <br> event.offsetX = " + mouse.x + ",event.offsetY = "+ mouse.y + ",color = " + g_color;
+    if(g_currentPos.col >= 0 && g_currentPos.row >= 0){
+        //renderChess(g_context,mouseRecord.x,mouseRecord.y,"gray");
     }
-
-    if(mouseCount == 1){
-        switch(g_mode){
-            case "rectangle":
-                for_test.innerHTML = "rectangle mode <br> mouseRecord.x = "+ mouseRecord.x + ",mouseRecord.y = " + mouseRecord.y + ";" + "event.offsetX = " + mouse.x + ",event.offsetY = "+ mouse.y + ",color = " + g_color;
-                renderRectangle(g_context,mouseRecord.x, mouseRecord.y, mouse.x - mouseRecord.x, mouse.y - mouseRecord.y, g_color,g_lineWidth);
-                break;
-            case "circle":
-                for_test.innerHTML = "circle mode <br> mouseRecord.x = "+ mouseRecord.x + ",mouseRecord.y = " + mouseRecord.y + ";" + "event.offsetX = " + mouse.x + ",event.offsetY = "+ mouse.y + ",color = " + g_color;
-                renderCircle(g_context,mouseRecord.x, mouseRecord.y, mouse.x - mouseRecord.x, mouse.y - mouseRecord.y, g_color,g_lineWidth);
-                break;
-            case "line":
-                for_test.innerHTML = "line mode <br> mouseRecord.x = "+ mouseRecord.x + ",mouseRecord.y = " + mouseRecord.y + ";" + "event.offsetX = " + mouse.x + ",event.offsetY = "+ mouse.y + ",color = " + g_color;
-                renderLine(g_context,mouseRecord.x, mouseRecord.y, mouse.x - mouseRecord.x, mouse.y - mouseRecord.y, g_color,g_lineWidth);
-                break;
-        }
-    }
-
-    for(var i = 0 ; i < g_input.length ; i++){
-        switch(g_input[i].mode){
-            case "paint":
-                renderPoint(g_context,g_input[i].x, g_input[i].y, g_input[i].w, g_input[i].h, g_input[i].color,g_input[i].lineWidth);
-                break;
-            case "rectangle":
-                renderRectangle(g_context,g_input[i].x, g_input[i].y, g_input[i].w, g_input[i].h, g_input[i].color,g_input[i].lineWidth);
-                break;
-            case "circle":
-                renderCircle(g_context,g_input[i].x, g_input[i].y, g_input[i].w, g_input[i].h, g_input[i].color,g_input[i].lineWidth);
-                break;
-            case "line":
-                renderLine(g_context,g_input[i].x, g_input[i].y, g_input[i].w, g_input[i].h, g_input[i].color,g_input[i].lineWidth);
-                break;
-        }
-    }
-
 
     g_context.restore();
 
 
 }
+
+function renderChess(context,colNum,rowNum,color){
+    renderFillCircle(context,g_inCenter.x + colNum * g_chessBlockWH,g_inCenter.y + rowNum * g_chessBlockWH,g_chessRadius/2,color);
+}
+
+function renderChessImg(context,colNum,rowNum,w,h,color){
+    switch(color){
+        case "white":
+            context.drawImage(imgWhiteChess, g_inCorner.x + (colNum+0.1) * g_chessBlockWH, g_inCorner.y + (rowNum+0.1) * g_chessBlockWH ,w,h);
+
+            break;
+            case "black":
+            context.drawImage(imgBlackChess, g_inCorner.x + (colNum+0.1) * g_chessBlockWH, g_inCorner.y + (rowNum+0.1) * g_chessBlockWH ,w,h);
+
+            break;
+            case "hint":
+            context.drawImage(imgHintChess, g_inCorner.x + (colNum+0.1) * g_chessBlockWH, g_inCorner.y + (rowNum+0.1) * g_chessBlockWH ,w,h);
+            
+            break;
+    }
+}
+
+
 
 function renderLine(context,x,y,w,h,color,lineWidth)
 {
