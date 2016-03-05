@@ -68,7 +68,8 @@ var mouseRecord = {x:0 ,y:0};
 
 var imgWhiteChess = new Image();
 var imgBlackChess = new Image();
-var imgHintChess = new Image();
+var imgHintWhiteChess = new Image();
+var imgHintBlackChess = new Image();
 
 
 function canvasApp(){
@@ -86,7 +87,8 @@ function canvasApp(){
     
     imgWhiteChess.src = 'img/whiteChess_small.png';
     imgBlackChess.src = 'img/blackChess_small.png';
-    imgHintChess.src = 'img/hintChess_small.png';
+    imgHintBlackChess.src = 'img/hintChess_black_small.png';
+    imgHintWhiteChess.src = 'img/hintChess_white_small2.png';
 
     initCanvas();//初始化
     initChessBoard();
@@ -226,7 +228,10 @@ function RenderChessBoard(){
                     
                 //畫提示   
                 case 4:
-                    renderChessImg(g_context,colNum,rowNum,g_chessRadius,g_chessRadius,"hint");
+                    if(g_board.currentChess == g_board.chess.whiteChess)
+                        renderChessImg(g_context,colNum,rowNum,g_chessRadius,g_chessRadius,"hintWhite");
+                    if(g_board.currentChess == g_board.chess.blackChess)
+                        renderChessImg(g_context,colNum,rowNum,g_chessRadius,g_chessRadius,"hintBlack");
                     //renderChess(g_context,colNum,rowNum,"green");
                     break;
             }
@@ -245,8 +250,8 @@ function Render(){
 
     g_context.save();
 
-    if(g_currentPos.col >= 0 && g_currentPos.row >= 0){
-        //renderChess(g_context,mouseRecord.x,mouseRecord.y,"gray");
+    if(g_currentPos.col >= 0 && g_currentPos.row >= 0 && g_board.checkerboardInfo[g_currentPos.row][g_currentPos.col] == g_board.InfoValue.none ){
+        renderChessHint(g_context,mouseRecord.x,mouseRecord.y,"green");
     }
 
     g_context.restore();
@@ -258,9 +263,13 @@ function renderChess(context,colNum,rowNum,color){
     renderFillCircle(context,g_inCenter.x + colNum * g_chessBlockWH,g_inCenter.y + rowNum * g_chessBlockWH,g_chessRadius/2,color);
 }
 
+function renderChessHint(context,colNum,rowNum,color){
+    renderCircle(context,g_inCenter.x + colNum * g_chessBlockWH,g_inCenter.y + rowNum * g_chessBlockWH,g_chessRadius/2,color,5);
+}
+
 function renderChessImg(context,colNum,rowNum,w,h,color){
     switch(color){
-        case "white":
+            case "white":
             context.drawImage(imgWhiteChess, g_inCorner.x + (colNum+0.1) * g_chessBlockWH, g_inCorner.y + (rowNum+0.1) * g_chessBlockWH ,w,h);
 
             break;
@@ -268,8 +277,16 @@ function renderChessImg(context,colNum,rowNum,w,h,color){
             context.drawImage(imgBlackChess, g_inCorner.x + (colNum+0.1) * g_chessBlockWH, g_inCorner.y + (rowNum+0.1) * g_chessBlockWH ,w,h);
 
             break;
-            case "hint":
+            /*case "hint":
             context.drawImage(imgHintChess, g_inCorner.x + (colNum+0.1) * g_chessBlockWH, g_inCorner.y + (rowNum+0.1) * g_chessBlockWH ,w,h);
+            
+            break;*/
+            case "hintWhite":
+            context.drawImage(imgHintWhiteChess, g_inCorner.x + (colNum+0.1) * g_chessBlockWH, g_inCorner.y + (rowNum+0.1) * g_chessBlockWH ,w,h);
+            
+            break;
+            case "hintBlack":
+            context.drawImage(imgHintBlackChess, g_inCorner.x + (colNum+0.1) * g_chessBlockWH, g_inCorner.y + (rowNum+0.1) * g_chessBlockWH ,w,h);
             
             break;
     }
@@ -285,6 +302,7 @@ function renderLine(context,x,y,w,h,color,lineWidth)
     context.moveTo(x,y);
     context.lineTo(x + w,y + h);
     context.stroke();
+    context.closePath();
 }
 
 function renderPoint(context,x,y,w,h,color,lineWidth)
@@ -306,30 +324,14 @@ function renderPoint(context,x,y,w,h,color,lineWidth)
     }
 }
 
-function renderCircle(context,x,y,w,h,color,lineWidth)
+function renderCircle(context,x,y,r,color,lineWidth)
 {
     context.lineWidth = lineWidth;
-    var radius,centerx,centery;
-    if(w > h)
-        radius = h / 2 * Math.sqrt(2);
-    else
-        radius = w / 2 * Math.sqrt(2);
-
-    if(w > 0)
-        centerx = x + Math.abs(radius) / Math.sqrt(2);
-    else
-        centerx = x + radius / Math.sqrt(2);
-
-    if(h > 0)
-        centery = y + Math.abs(radius) / Math.sqrt(2);
-    else
-        centery = y + radius / Math.sqrt(2);
-
-    radius = Math.abs(radius);
     context.strokeStyle = color; 
     context.beginPath();
-    context.arc(centerx,centery,radius,0,2*Math.PI);
+    context.arc(x, y, r, 0, 2 * Math.PI, false);
     context.stroke();
+    context.closePath();
 }
 
 function renderFillCircle(context,x,y,r,color)
@@ -338,14 +340,17 @@ function renderFillCircle(context,x,y,r,color)
     context.arc(x, y, r, 0, 2 * Math.PI, false);
     context.fillStyle = color;
     context.fill();
+    context.closePath();
 }
 
 //For Rect mode
 function renderRectangle(context,x,y,w,h,color,lineWidth) {
     context.lineWidth = lineWidth;
     context.strokeStyle = color;
+    context.beginPath();
     context.rect(x, y, w, h);
     context.stroke();
+    context.closePath();
 }
 
 function clearCanvas(){
