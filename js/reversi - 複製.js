@@ -27,6 +27,9 @@ function Checkerboard(){
     var chessManual = [];
     var chessRecord = [];
     var chessManualIndex;
+    
+    var Log;
+    var showedLog;
 
     initializeCheckerBoard();
 
@@ -662,14 +665,28 @@ function Checkerboard(){
     function logHandler(log){
         Log += log;
     }
-    
-    function showLog(){}
-    
+
+    function showLog(){
+        if (this.Log != this.showedLog && this.Log != ""){
+            this.showedLog = this.Log;
+        }
+
+        if (this.showedLog != ""){
+            alert("提示 : \n" + this.showedLog);
+        }
+        else {
+            return  "";
+        }
+
+        this.Log = "";
+    }
+
     function clearLog(){
         Log = "";
     }
 
     function getInfo(){
+        this.showLog();
         return checkerboardInfo;
     }
 };

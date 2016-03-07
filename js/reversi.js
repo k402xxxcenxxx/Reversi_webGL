@@ -13,6 +13,8 @@ function Checkerboard(){
     };
 
     this.isFinished;
+    this.isAI;
+    this.AIChess;
 
     this.sideLength;
     this.currentChess;
@@ -26,20 +28,32 @@ function Checkerboard(){
     this.checkerboardInfo = [];
     this.chessManual = [];
     this.chessRecord = [];
+    this.chessPosRecord = [];
     this.chessManualIndex;
 
 
-    this.initializeCheckerBoard();
+    this.Log;
+    this.showedLog;
+
+    this.lastChessCol = -1;
+    this.lastChessRow = -1;
+
+
+    this.initializeCheckerBoard(true);
 
 }
 
-Checkerboard.prototype.initializeCheckerBoard = function (){
+Checkerboard.prototype.initializeCheckerBoard = function (AI){
 
     this.isFinished = false;
     this.sideLength = 8;
 
     this.currentPosition[0] = 0;
     this.currentPosition[1] = 0;
+
+    this.lastChessCol = -1;
+    this.lastChessRow = -1;
+
     this.blackCount = 2;
     this.whiteCount = 2;
     this.Log = "";
@@ -47,6 +61,14 @@ Checkerboard.prototype.initializeCheckerBoard = function (){
     this.chessManualIndex = -1;
     this.step = -1;
     this.currentChess = this.chess.whiteChess;
+
+    if(AI){
+        this.isAI = true;
+        this.AIChess = this.chess.whiteChess;
+    }else{
+        this.isAI = false;
+    }
+
     for (var j = 0;j < this.sideLength;j++)
     {
         var row = [];
@@ -70,6 +92,13 @@ Checkerboard.prototype.initializeCheckerBoard = function (){
     }
 
     this.saveCurrentChessManual();
+};
+
+Checkerboard.prototype.UpdateLastChess = function(){
+    if(this.chessManualIndex > 0){
+        this.lastChessCol = this.chessPosRecord[this.chessManualIndex - 1][0];
+        this.lastChessRow = this.chessPosRecord[this.chessManualIndex - 1][1];
+    }
 };
 
 Checkerboard.prototype.saveCurrentChessManual = function(){
@@ -104,6 +133,8 @@ Checkerboard.prototype.saveCurrentChessManual = function(){
     }
     this.chessManual[this.chessManualIndex] = board;
 
+    this.chessPosRecord[this.chessManualIndex] = this.currentPosition;
+
     if (this.currentChess == this.chess.whiteChess){
         this.currentChess = this.chess.blackChess;
     }
@@ -126,6 +157,7 @@ Checkerboard.prototype.saveCurrentChessManual = function(){
     }
 
     this.chessRecord[this.chessManualIndex] = this.currentChess;
+    this.UpdateLastChess();
 
 };
 
@@ -213,7 +245,7 @@ Checkerboard.prototype.checkRight = function (PosX,PosY){
     var rowNum = PosY;
     var colNum = PosX + 1;
     var gainValue = 0;
-    
+
     if(colNum > this.sideLength){
         return -1;
     }
@@ -354,7 +386,7 @@ Checkerboard.prototype.checkDown = function (PosX,PosY){
     var rowNum = PosY + 1;
     var colNum = PosX;
     var gainValue = 0;
-    
+
     if(rowNum >= this.sideLength){
         return -1;
     }
@@ -448,7 +480,7 @@ Checkerboard.prototype.checkRightDown = function (PosX,PosY){
     var rowNum = PosY + 1;
     var colNum = PosX + 1;
     var gainValue = 0;
-    
+
     if(rowNum >= this.sideLength || colNum >= this.sideLength){
         return -1;
     }
@@ -605,35 +637,109 @@ Checkerboard.prototype.checkLegal = function (PosX,PosY){
     }
 };//check if legal
 
+Checkerboard.prototype.checkGetChessCount = function (PosX,PosY){
+    if (this.checkerboardInfo[PosY][PosX] != this.InfoValue.none){
+        return 0;
+    }
+
+    var count = 0;
+
+    if(this.checkRight(PosX, PosY) > 0){
+        count+=this.checkRight(PosX, PosY);
+    }
+    if(this.checkLeft(PosX, PosY) > 0){
+        count+=this.checkLeft(PosX, PosY);
+    }
+    if(this.checkUp(PosX, PosY) > 0){
+        count+=this.checkUp(PosX, PosY);
+    }
+    if(this.checkDown(PosX, PosY) > 0){
+        count+=this.checkDown(PosX, PosY);
+    }
+    if(this.checkRightUp(PosX, PosY) > 0){
+        count+=this.checkRight(PosX, PosY);
+    }
+    if(this.checkRightDown(PosX, PosY) > 0){
+        count+=this.checkRightDown(PosX, PosY);
+    }
+    if(this.checkLeftUp(PosX, PosY) > 0){
+        count+=this.checkLeftUp(PosX, PosY);
+    }
+    if(this.checkLeftDown(PosX, PosY) > 0){
+        count+=this.checkLeftDown(PosX, PosY);
+    }
+
+    return count;
+};//check if legal
+
 Checkerboard.prototype.setChess = function (PosX,PosY){
-        this.clearLog();
+    this.clearLog();
+    this.currentPosition[0] = PosX;
+    this.currentPosition[1] = PosY;
 
-        if (this.checkLegal(PosX, PosY)){
-            if (this.currentChess == this.chess.blackChess){
-                // set value
-                this.setCheckerboardInfo(PosX, PosY, this.InfoValue.black);
+    if (this.checkLegal(PosX, PosY)){
+        if (this.currentChess == this.chess.blackChess){
+            // set value
+            this.setCheckerboardInfo(PosX, PosY, this.InfoValue.black);
 
-                //recode chess info
-                this.saveCurrentChessManual();
+            //recode chess info
+            this.saveCurrentChessManual();
 
-            }
-            else if (this.currentChess == this.chess.whiteChess){
-                // set value
-                this.setCheckerboardInfo(PosX, PosY, this.InfoValue.white);
+        }
+        else if (this.currentChess == this.chess.whiteChess){
+            // set value
+            this.setCheckerboardInfo(PosX, PosY, this.InfoValue.white);
 
-                //recode chess info
-                this.saveCurrentChessManual();
+            //recode chess info
+            this.saveCurrentChessManual();
 
-            }
-            else{
-                return;
-            }
         }
         else{
-            if (!this.isFinished)
-                this.logHandler("你不可以下這裡\n");
+            return;
+        }
+
+        this.checkFinished();
+        if(!this.isFinished){
+            if(this.currentChess == this.AIChess){
+                this.AIsetChess();
+            }
+        }
+        return true;
+    }
+    else{
+        if (!this.isFinished)
+            this.logHandler("你不可以下這裡\n");
+        return false;
+    }
+};
+
+Checkerboard.prototype.AIsetChess = function(){
+    var wantRow = 0,wantCol = 0;
+    var count = 0;
+    var maxCount = 0;
+    for (var rowNum = 0; rowNum < this.sideLength; rowNum++)
+    {
+        for (var colNum = 0; colNum < this.sideLength; colNum++)
+        {
+            if(this.checkerboardInfo[rowNum][colNum] == this.InfoValue.none){
+                if ((count = this.checkGetChessCount(colNum, rowNum)) > 0){
+                    if(maxCount < count){
+                        maxCount = count;
+                        wantCol = colNum;
+                        wantRow = rowNum;
+                    }else if(maxCount == count){
+                        if(Math.random() >= 0.5){
+                            wantCol = colNum;
+                            wantRow = rowNum;
+                        }
+                    }
+                }
+            }
         }
     }
+
+    this.setChess(wantCol,wantRow);
+};
 
 Checkerboard.prototype.checkFinished = function(){
     if (this.step >= 60){
@@ -647,13 +753,28 @@ Checkerboard.prototype.logHandler = function(log){
     this.Log += log;
 };
 
-Checkerboard.prototype.showLog = function(){};
+Checkerboard.prototype.showLog = function(){
+    if (this.Log != this.showedLog && this.Log != ""){
+        this.showedLog = this.Log;
+    }
+
+    if (this.showedLog != ""){
+        alert("提示 : \n" + this.showedLog);
+    }
+    else {
+        return  "";
+    }
+
+    Log = "";
+};
 
 Checkerboard.prototype.clearLog = function(){
     this.Log = "";
+    this.showedLog = "";
 };
 
 Checkerboard.prototype.getBoardInfo = function(){
+    this.showLog();
     var board = [];
     for (var rowNum = 0; rowNum < this.sideLength; rowNum++)
     {

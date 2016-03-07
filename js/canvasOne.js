@@ -65,6 +65,7 @@ var mouseDown;
 var mouseCount = 0;
 var mouse = {x:0,y:0};
 var mouseRecord = {x:0 ,y:0};
+var lastRecord = {x:-1,y:-1};
 
 var imgWhiteChess = new Image();
 var imgBlackChess = new Image();
@@ -151,8 +152,7 @@ function canvasApp(){
 
         }
         
-        
-            Render();
+        Render();
 
     }
     function eventMouseDown(){
@@ -161,9 +161,21 @@ function canvasApp(){
     }
 
     function eventMouseUp(){
-        g_board.setChess(mouseRecord.x,mouseRecord.y);
         
+        if(g_board.setChess(mouseRecord.x,mouseRecord.y)){
+            lastRecord.x = g_board.lastChessCol;
+            lastRecord.y = g_board.lastChessRow;
+        }
         g_boardShow = g_board.getBoardInfo();
+        Render();
+        if(g_board.isFinished){
+            if(g_board.blackCount > g_board.whiteCount)
+                alert("黑子獲勝");
+            else if(g_board.blackCount < g_board.whiteCount)
+                alert("白子獲勝");
+            else
+                alert("平手");
+        }
     }
 
     //setInterval(Render,1000/60);//每秒呼叫render()60次
@@ -250,8 +262,11 @@ function Render(){
 
     g_context.save();
 
-    if(g_currentPos.col >= 0 && g_currentPos.row >= 0 && g_board.checkerboardInfo[g_currentPos.row][g_currentPos.col] == g_board.InfoValue.none ){
+    if(g_currentPos.col >= 0 && g_currentPos.row >= 0 && g_boardShow[g_currentPos.row][g_currentPos.col] == g_board.InfoValue.hint ){
         renderChessHint(g_context,mouseRecord.x,mouseRecord.y,"green");
+    }
+    if(lastRecord.x >= 0 && lastRecord.y >= 0 ){
+        renderChessHint(g_context,lastRecord.x,lastRecord.y,"yellow");
     }
 
     g_context.restore();
